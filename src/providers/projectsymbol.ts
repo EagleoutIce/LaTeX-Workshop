@@ -1,18 +1,24 @@
 import * as vscode from 'vscode'
 
-import type {Extension} from '../main'
 import {Section, SectionNodeProvider} from './structure'
+import type {LoggerLocator, LwfsLocator, ManagerLocator, UtensilsParserLocator} from '../interfaces'
+
+interface IExtension extends
+    LoggerLocator,
+    LwfsLocator,
+    ManagerLocator,
+    UtensilsParserLocator { }
 
 export class ProjectSymbolProvider implements vscode.WorkspaceSymbolProvider {
-    private readonly extension: Extension
+    private readonly extension: IExtension
     private readonly sectionNodeProvider: SectionNodeProvider
 
-    constructor(extension: Extension) {
+    constructor(extension: IExtension) {
         this.extension = extension
         this.sectionNodeProvider = new SectionNodeProvider(extension)
     }
 
-    provideWorkspaceSymbols(): vscode.SymbolInformation[] {
+    async provideWorkspaceSymbols(): Promise<vscode.SymbolInformation[]> {
         const symbols: vscode.SymbolInformation[] = []
         if (this.extension.manager.rootFile === undefined) {
             return symbols
@@ -21,7 +27,7 @@ export class ProjectSymbolProvider implements vscode.WorkspaceSymbolProvider {
         if (rootFileUri && this.extension.lwfs.isVirtualUri(rootFileUri)) {
             return symbols
         }
-        this.sectionToSymbols(symbols, this.sectionNodeProvider.buildLaTeXModel(new Set<string>(), this.extension.manager.rootFile))
+        this.sectionToSymbols(symbols, await this.sectionNodeProvider.buildLaTeXModel())
         return symbols
     }
 
